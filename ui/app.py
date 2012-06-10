@@ -128,22 +128,41 @@ class ProductView(gtk.TreeView):
         super(ProductView, self).__init__(model)
         pixbuf_renderer = gtk.CellRendererPixbuf()
         text_renderer = gtk.CellRendererText()
+        right_aligned_text_renderer = gtk.CellRendererText()
+        right_aligned_text_renderer.set_alignment(1.0, 0.5)
         toggle_renderer = gtk.CellRendererToggle()
         toggle_renderer.set_property("activatable", True)
-        toggle_renderer.connect("toggled", self.on_product_ordered_toggled, model)
-        product_urgency_column = gtk.TreeViewColumn("Urgente?", pixbuf_renderer, pixbuf=ProductModel.URGENCY_IDX)
-        self.append_column(product_urgency_column)
-        product_name_column = gtk.TreeViewColumn("Producto", text_renderer, text=ProductModel.NAME_IDX)
-        self.append_column(product_name_column)
-        product_quantity_column = gtk.TreeViewColumn("Cantidad", text_renderer, text=ProductModel.QUANTITY_IDX)
-        self.append_column(product_quantity_column)
+        toggle_renderer.connect("toggled", self.on_product_ordered_toggled)
+        
+        product_urgency_column = gtk.TreeViewColumn("Urgente?", pixbuf_renderer, 
+                                                    pixbuf=model.URGENCY_IDX)
+        self.configure_and_add_column(product_urgency_column)
+        product_urgency_column.set_expand(False)
+        
+        product_name_column = gtk.TreeViewColumn("Producto", text_renderer, 
+                                                 text=model.NAME_IDX)
+        self.configure_and_add_column(product_name_column)
+        product_name_column.set_expand(True)
+        
+        product_quantity_column = gtk.TreeViewColumn("Cantidad", 
+                                                     right_aligned_text_renderer, 
+                                                     text=model.QUANTITY_IDX)
+        self.configure_and_add_column(product_quantity_column)
+        product_quantity_column.set_expand(False)
+        
         product_ordered_column = gtk.TreeViewColumn("Pedido?", toggle_renderer)
-        product_ordered_column.add_attribute(toggle_renderer, "active", ProductModel.ORDERED_IDX)
-        self.append_column(product_ordered_column)
+        self.configure_and_add_column(product_ordered_column)
+        product_ordered_column.set_expand(False)
+        product_ordered_column.add_attribute(toggle_renderer, "active", model.ORDERED_IDX)
 
-    def on_product_ordered_toggled(self, cell, path, model):
-        model[path][ProductModel.ORDERED_IDX] = not model[path][ProductModel.ORDERED_IDX]
+    def on_product_ordered_toggled(self, cell, path):
+        model = self.get_model()        
+        model[path][model.ORDERED_IDX] = not model[path][model.ORDERED_IDX]
 
     def get_selected(self):
         return self.get_selection().get_selected()
 
+    def configure_and_add_column(self, column):
+        column.set_resizable(True)
+        column.set_alignment(0.5)
+        self.append_column(column)
