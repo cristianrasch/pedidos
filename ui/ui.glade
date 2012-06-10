@@ -27,12 +27,13 @@
                     <property name="visible">True</property>
                     <property name="left_padding">12</property>
                     <child>
-                      <object class="GtkCalendar" id="calendar1">
+                      <object class="GtkCalendar" id="calendar">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="year">2012</property>
                         <property name="month">5</property>
                         <property name="day">9</property>
+                        <signal name="day_selected" handler="on_calendar_day_selected"/>
                       </object>
                     </child>
                   </object>
@@ -59,7 +60,7 @@
                     <property name="visible">True</property>
                     <property name="left_padding">12</property>
                     <child>
-                      <object class="GtkEntry" id="entry1">
+                      <object class="GtkEntry" id="name">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="invisible_char">&#x25CF;</property>
@@ -93,7 +94,7 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="invisible_char">&#x25CF;</property>
-                        <property name="adjustment">cantidad</property>
+                        <property name="adjustment">quantity</property>
                         <property name="numeric">True</property>
                       </object>
                     </child>
@@ -112,7 +113,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkCheckButton" id="checkbutton1">
+              <object class="GtkCheckButton" id="urgency">
                 <property name="label" translatable="yes">Urgente?</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
@@ -139,11 +140,12 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="button2">
+                  <object class="GtkButton" id="clear">
                     <property name="label" translatable="yes">Limpiar</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
+                    <signal name="clicked" handler="on_clear_clicked"/>
                   </object>
                   <packing>
                     <property name="position">1</property>
@@ -166,7 +168,7 @@
             <property name="orientation">vertical</property>
             <property name="spacing">5</property>
             <child>
-              <object class="GtkLabel" id="label4">
+              <object class="GtkLabel" id="title">
                 <property name="visible">True</property>
                 <property name="yalign">0</property>
                 <property name="label" translatable="yes">Pedido del 9/6</property>
@@ -198,7 +200,7 @@
       </object>
     </child>
   </object>
-  <object class="GtkAdjustment" id="cantidad">
+  <object class="GtkAdjustment" id="quantity">
     <property name="value">1</property>
     <property name="lower">1</property>
     <property name="upper">99</property>
