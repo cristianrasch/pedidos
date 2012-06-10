@@ -129,11 +129,12 @@
                 <property name="visible">True</property>
                 <property name="homogeneous">True</property>
                 <child>
-                  <object class="GtkButton" id="button1">
+                  <object class="GtkButton" id="save">
                     <property name="label" translatable="yes">Guardar</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
+                    <signal name="clicked" handler="on_save_clicked"/>
                   </object>
                   <packing>
                     <property name="position">0</property>

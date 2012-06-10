@@ -36,9 +36,10 @@ class App(object):
     def build_product_view(self):
         window = self.builder.get_object("scrolledwindow")
         self.product_model = ProductModel()        
-        product_view = ProductView(self.product_model)        
-        product_view.connect("cursor-changed", self.on_product_selected, self.product_model)
-        window.add(product_view)
+        self.product_view = ProductView(self.product_model)        
+        self.product_view.connect("cursor-changed", self.on_product_clicked)
+        self.product_view.connect("select-cursor-row", self.on_product_double_clicked)
+        window.add(self.product_view)
         window.show_all()
 
     def reset_calendar(self):
@@ -54,8 +55,26 @@ class App(object):
         gtk.main_quit()
         return False
 
+    def on_save_clicked(self, widget):
+        model, treeiter = self.product_view.get_selected()
+        urgency = ProductModel.STAR_ICON if self.urgency.get_active() else None
+        name = self.name.get_text()
+        quantity = self.quantity.get_value()
+
+        if treeiter:
+            model.set_value(treeiter, ProductModel.URGENCY_IDX, urgency)
+            model.set_value(treeiter, ProductModel.NAME_IDX, name)
+            model.set_value(treeiter, ProductModel.QUANTITY_IDX, quantity)
+        else:
+            model.append([0, urgency, name, quantity, False])
+        
+        self.reset_form()
+
     def on_clear_clicked(self, widget):
         self.reset_calendar()
+        self.reset_form()
+
+    def reset_form(self):
         self.name.set_text("")
         self.reset_product_quantity()
         self.urgency.set_active(False)
@@ -67,19 +86,30 @@ class App(object):
         if hasattr(self, "product_model"):
             self.product_model.rebuild(selected_date.day)
 
-    def on_product_selected(self, treeview, model):
-        treeiter = treeview.get_selection().get_selected()[1]
-        urgency, name, quantity, ordered = model.get(treeiter, *range(4))
+    def on_product_clicked(self, treeview):
+        treeiter = treeview.get_selected()[1]
+        if not treeiter: return
+        model = treeview.get_model()
+        urgency, name, quantity, ordered = model.get(treeiter, *range(1, 5))
         if not ordered:        
-            self.builder.get_object("urgency").set_active(urgency is not None)
-            self.builder.get_object("name").set_text(name)
+            self.urgency.set_active(urgency is not None)
+            self.name.set_text(name)
             self.quantity.set_value(quantity)
 
+    def on_product_double_clicked(self, treeview, start_editing):
+        treeiter, model = treeview.get_selected()[1], treeview.get_model()
+        model.remove(treeiter)
+
 class ProductModel(gtk.ListStore):
+    STAR_ICON = gtk.gdk.pixbuf_new_from_file(relative_path("images/star.png"))
+    ID_IDX = 0
+    URGENCY_IDX = 1
+    NAME_IDX = 2
+    QUANTITY_IDX = 3
+    ORDERED_IDX = 4
+
     def __init__(self):
-        super(ProductModel, self).__init__(gtk.gdk.Pixbuf, str, int, "gboolean")
-        icon_path = relative_path("images/star.png")
-        self.star_icon = gtk.gdk.pixbuf_new_from_file(icon_path)
+        super(ProductModel, self).__init__(int, gtk.gdk.Pixbuf, str, int, "gboolean")
         howmany = randint(1, 10)
         self.append_products(howmany)
       
@@ -89,9 +119,9 @@ class ProductModel(gtk.ListStore):
 
     def append_products(self, howmany):
         for i in xrange(howmany):
-            icon = self.star_icon if (i%2)!=0 else None
+            icon = self.STAR_ICON if (i%2)!=0 else None
             product_name = "Producto #%d" % (i+1)
-            self.append([icon, product_name, randint(1, i+1), (i%2)==0])
+            self.append([i+1, icon, product_name, randint(1, i+1), (i%2)==0])
 
 class ProductView(gtk.TreeView):
     def __init__(self, model):
@@ -101,23 +131,19 @@ class ProductView(gtk.TreeView):
         toggle_renderer = gtk.CellRendererToggle()
         toggle_renderer.set_property("activatable", True)
         toggle_renderer.connect("toggled", self.on_product_ordered_toggled, model)
-        product_urgency_column = gtk.TreeViewColumn("Urgente?", pixbuf_renderer, pixbuf=0)
+        product_urgency_column = gtk.TreeViewColumn("Urgente?", pixbuf_renderer, pixbuf=ProductModel.URGENCY_IDX)
         self.append_column(product_urgency_column)
-        product_name_column = gtk.TreeViewColumn("Producto", text_renderer, text=1)
+        product_name_column = gtk.TreeViewColumn("Producto", text_renderer, text=ProductModel.NAME_IDX)
         self.append_column(product_name_column)
-        product_quantity_column = gtk.TreeViewColumn("Cantidad", text_renderer, text=2)
+        product_quantity_column = gtk.TreeViewColumn("Cantidad", text_renderer, text=ProductModel.QUANTITY_IDX)
         self.append_column(product_quantity_column)
         product_ordered_column = gtk.TreeViewColumn("Pedido?", toggle_renderer)
-        product_ordered_column.add_attribute(toggle_renderer, "active", 3)
+        product_ordered_column.add_attribute(toggle_renderer, "active", ProductModel.ORDERED_IDX)
         self.append_column(product_ordered_column)
 
-        # self.connect("cursor-changed", self.on_select_changed, model)
-        self.connect("select-cursor-row", self.on_select_cursor_row, model)
-        
     def on_product_ordered_toggled(self, cell, path, model):
-        model[path][3] = not model[path][3]
+        model[path][ProductModel.ORDERED_IDX] = not model[path][ProductModel.ORDERED_IDX]
 
-    def on_select_cursor_row(self, treeview, start_editing, model):
-        treeiter = self.get_selection().get_selected()[1]
-        model.remove(treeiter)
+    def get_selected(self):
+        return self.get_selection().get_selected()
 
