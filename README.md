@@ -19,13 +19,13 @@ Aplicación de escritorio para la gestión de pedidos escrita en PyGTK.
 2. Hacer doble click sobre el archivo main.py
 
 ### Consultas, agradecimientos o sugerencias ###
-Serán recibidas en la dirección de correo electrónico del [autor](mailto:cristianrasch@gmail.com)
+Serán recibidas en la [dirección de correo electrónico](mailto:cristianrasch@gmail.com) del [autor](http://www.cristianrasch.com.ar/) :)
 
 ### Copias de seguridad ###
 Lo importante es hacer copias de seguridad de la base de datos, el archivo db/production.db. Se puede usar [Dropbox](http://www.dropbox.com) o cualquier otro mecanismo que permita crear copias de seguridad de la base de datos.
 
 ### Licencia ###
-Copyright (c) <2012> <Cristian Rasch>
+Copyright (c) [Cristian Rasch](http://www.cristianrasch.com.ar/) 2012
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
