@@ -67,7 +67,6 @@ class ProductView(gtk.TreeView):
         product_urgency_column = gtk.TreeViewColumn("Urgente?", pixbuf_renderer, 
                                                     pixbuf=model.URGENCY_IDX)
         self.configure_and_add_column(product_urgency_column)
-        product_urgency_column.set_expand(False)
         
         product_name_column = gtk.TreeViewColumn("Producto", text_renderer, 
                                                  text=model.NAME_IDX)
@@ -78,11 +77,9 @@ class ProductView(gtk.TreeView):
                                                      right_aligned_text_renderer, 
                                                      text=model.QUANTITY_IDX)
         self.configure_and_add_column(product_quantity_column)
-        product_quantity_column.set_expand(False)
         
         product_ordered_column = gtk.TreeViewColumn("Pedido?", toggle_renderer)
         self.configure_and_add_column(product_ordered_column)
-        product_ordered_column.set_expand(False)
         product_ordered_column.add_attribute(toggle_renderer, "active", model.ORDERED_IDX)
 
     def on_product_ordered_toggled(self, cell, path):
@@ -98,5 +95,7 @@ class ProductView(gtk.TreeView):
 
     def configure_and_add_column(self, column):
         column.set_resizable(True)
+        column.set_expand(False)
         column.set_alignment(0.5)
+        column.set_min_width(50)
         self.append_column(column)
