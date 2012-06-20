@@ -3,35 +3,31 @@
 import gtk
 import os
 
-from random import randint
 from datetime import date
 
-curr_dir = os.path.dirname(__file__)
-def relative_path(path):
-    return os.path.join(curr_dir, *path.split("/"))
-
+from treeview import ProductModel, ProductView
+from pedidos.helpers import relative_path
+from pedidos.model.order_product import OrderProduct
 
 class App(object):
     def __init__(self):
         self.build_from_glade_xml()
+        self.build_product_view()
         self.reset_calendar()
         self.reset_product_quantity()
-        self.build_product_view()
         
     def build_from_glade_xml(self):
         self.builder = gtk.Builder()
-        glade_xml = relative_path("ui.glade")
+        glade_xml = relative_path("ui/ui.glade")
         self.builder.add_from_file(glade_xml)
         self.builder.connect_signals(self)
 
+        self.window = self.builder.get_object("window")
         self.calendar = self.builder.get_object("calendar")
         self.name = self.builder.get_object("name")
         self.quantity = self.builder.get_object("quantity")
         self.urgency = self.builder.get_object("urgency")
         self.title = self.builder.get_object("title")
-        
-    def reset_product_quantity(self):
-        self.quantity.set_value(1)
       
     def build_product_view(self):
         window = self.builder.get_object("scrolledwindow")
@@ -42,13 +38,20 @@ class App(object):
         window.add(self.product_view)
         window.show_all()
 
+    def reset_product_quantity(self):
+        self.quantity.set_value(1)
+
     def reset_calendar(self):
         today = date.today()
         self.calendar.select_month(today.month-1, today.year)
         self.calendar.select_day(today.day)
         
     def run(self):
-        self.builder.get_object("window").show()
+        reordered_products = OrderProduct.reorder_pending_products()
+        if reordered_products:
+            self.notify("%d producto(s) agregado(s) al pedido del día" % reordered_products)
+            self.on_calendar_day_selected(self.calendar)
+        self.window.show()
         gtk.main()
     
     def on_window_delete_event(self, widget, data=None):
@@ -57,18 +60,43 @@ class App(object):
 
     def on_save_clicked(self, widget):
         model, treeiter = self.product_view.get_selected()
-        urgency = ProductModel.STAR_ICON if self.urgency.get_active() else None
-        name = self.name.get_text()
-        quantity = self.quantity.get_value()
-
         if treeiter:
-            model.set_value(treeiter, ProductModel.URGENCY_IDX, urgency)
-            model.set_value(treeiter, ProductModel.NAME_IDX, name)
-            model.set_value(treeiter, ProductModel.QUANTITY_IDX, quantity)
+            order_product = model.get_value(treeiter, ProductModel.PROD_IDX)
         else:
-            model.append([0, urgency, name, quantity, False])
-        
-        self.reset_form()
+            order_product = OrderProduct(ordered_on=self.calendardate())
+
+        order_product.name = unicode(self.name.get_text(), "utf-8")
+        order_product.quantity = self.quantity.get_value()
+        order_product.isurgent = self.urgency.get_active()
+
+        if order_product.save():
+            if treeiter:
+                model.update_order_product(treeiter, order_product)
+            else:
+                model.append_order_product(order_product)
+            
+            self.reset_form()
+        else:
+            self.showerror(order_product.errors.fullmessages())
+
+    def notify(self, message):
+        dialog = gtk.MessageDialog(self.window, gtk.DIALOG_MODAL, gtk.MESSAGE_INFO, 
+                                   gtk.BUTTONS_OK, message)
+        dialog.run()
+        dialog.destroy()
+
+    def ask(self, question):
+        dialog = gtk.MessageDialog(self.window, gtk.DIALOG_MODAL, gtk.MESSAGE_QUESTION, 
+                                   gtk.BUTTONS_YES_NO, question)
+        response = dialog.run()
+        dialog.destroy()
+        return response == gtk.RESPONSE_YES
+
+    def showerror(self, err):
+        dialog = gtk.MessageDialog(self.window, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, 
+                                   gtk.BUTTONS_CLOSE, err)
+        dialog.run()
+        dialog.destroy()
 
     def on_clear_clicked(self, widget):
         self.reset_calendar()
@@ -78,91 +106,35 @@ class App(object):
         self.name.set_text("")
         self.reset_product_quantity()
         self.urgency.set_active(False)
+
+    def calendardate(self):
+        year, month, day = self.calendar.get_date()
+        return date(year, month+1, day)
         
     def on_calendar_day_selected(self, widget):
-        year, month, day = widget.get_date()
-        selected_date = date(year, month+1, day)
+        selected_date = self.calendardate()
         self.title.set_text("Pedido del %s" % selected_date.strftime("%d/%m"))
-        if hasattr(self, "product_model"):
-            self.product_model.rebuild(selected_date.day)
+        self.product_model.selected_date = selected_date
 
     def on_product_clicked(self, treeview):
         treeiter = treeview.get_selected()[1]
         if not treeiter: return
         model = treeview.get_model()
-        urgency, name, quantity, ordered = model.get(treeiter, *range(1, 5))
-        if not ordered:        
-            self.urgency.set_active(urgency is not None)
-            self.name.set_text(name)
-            self.quantity.set_value(quantity)
+        order_product = model.get_value(treeiter, ProductModel.PROD_IDX)
+        if not order_product.isordered:
+            self.urgency.set_active(order_product.isurgent)
+            self.name.set_text(order_product.name)
+            self.quantity.set_value(order_product.quantity)
 
     def on_product_double_clicked(self, treeview, start_editing):
         treeiter, model = treeview.get_selected()[1], treeview.get_model()
-        model.remove(treeiter)
-
-class ProductModel(gtk.ListStore):
-    STAR_ICON = gtk.gdk.pixbuf_new_from_file(relative_path("images/star.png"))
-    ID_IDX = 0
-    URGENCY_IDX = 1
-    NAME_IDX = 2
-    QUANTITY_IDX = 3
-    ORDERED_IDX = 4
-
-    def __init__(self):
-        super(ProductModel, self).__init__(int, gtk.gdk.Pixbuf, str, int, "gboolean")
-        howmany = randint(1, 10)
-        self.append_products(howmany)
-      
-    def rebuild(self, howmany):
-        self.clear()
-        self.append_products(howmany)
-
-    def append_products(self, howmany):
-        for i in xrange(howmany):
-            icon = self.STAR_ICON if (i%2)!=0 else None
-            product_name = "Producto #%d" % (i+1)
-            self.append([i+1, icon, product_name, randint(1, i+1), (i%2)==0])
-
-class ProductView(gtk.TreeView):
-    def __init__(self, model):
-        super(ProductView, self).__init__(model)
-        pixbuf_renderer = gtk.CellRendererPixbuf()
-        text_renderer = gtk.CellRendererText()
-        right_aligned_text_renderer = gtk.CellRendererText()
-        right_aligned_text_renderer.set_alignment(1.0, 0.5)
-        toggle_renderer = gtk.CellRendererToggle()
-        toggle_renderer.set_property("activatable", True)
-        toggle_renderer.connect("toggled", self.on_product_ordered_toggled)
+        if not treeiter: 
+            return
+        order_product = model.get_value(treeiter, ProductModel.PROD_IDX)
         
-        product_urgency_column = gtk.TreeViewColumn("Urgente?", pixbuf_renderer, 
-                                                    pixbuf=model.URGENCY_IDX)
-        self.configure_and_add_column(product_urgency_column)
-        product_urgency_column.set_expand(False)
-        
-        product_name_column = gtk.TreeViewColumn("Producto", text_renderer, 
-                                                 text=model.NAME_IDX)
-        self.configure_and_add_column(product_name_column)
-        product_name_column.set_expand(True)
-        
-        product_quantity_column = gtk.TreeViewColumn("Cantidad", 
-                                                     right_aligned_text_renderer, 
-                                                     text=model.QUANTITY_IDX)
-        self.configure_and_add_column(product_quantity_column)
-        product_quantity_column.set_expand(False)
-        
-        product_ordered_column = gtk.TreeViewColumn("Pedido?", toggle_renderer)
-        self.configure_and_add_column(product_ordered_column)
-        product_ordered_column.set_expand(False)
-        product_ordered_column.add_attribute(toggle_renderer, "active", model.ORDERED_IDX)
-
-    def on_product_ordered_toggled(self, cell, path):
-        model = self.get_model()        
-        model[path][model.ORDERED_IDX] = not model[path][model.ORDERED_IDX]
-
-    def get_selected(self):
-        return self.get_selection().get_selected()
-
-    def configure_and_add_column(self, column):
-        column.set_resizable(True)
-        column.set_alignment(0.5)
-        self.append_column(column)
+        if order_product.isordered:
+            self.showerror("%s es un producto ya pedido, no se puede eliminar" % order_product.name)
+        else:
+            confirmed = self.ask("¿Está seguro desea eliminar el producto: %s?" % order_product.name)
+            if confirmed and order_product.delete():
+                model.remove(treeiter)
