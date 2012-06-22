@@ -68,7 +68,7 @@ class App(object):
     def on_save_clicked(self, widget):
         model, treeiter = self.product_view.get_selected()
         if treeiter:
-            order_product = model.get_value(treeiter, ProductModel.PROD_IDX)
+            order_product = model.get_order_product(treeiter)
         else:
             order_product = OrderProduct(ordered_on=self.calendardate())
 
@@ -127,7 +127,7 @@ class App(object):
         treeiter = treeview.get_selected()[1]
         if not treeiter: return
         model = treeview.get_model()
-        order_product = model.get_value(treeiter, ProductModel.PROD_IDX)
+        order_product = model.get_order_product(treeiter)
         if not order_product.isordered:
             self.urgency.set_active(order_product.isurgent)
             self.name.set_text(order_product.name)
@@ -137,7 +137,7 @@ class App(object):
         treeiter, model = treeview.get_selected()[1], treeview.get_model()
         if not treeiter: 
             return
-        order_product = model.get_value(treeiter, ProductModel.PROD_IDX)
+        order_product = model.get_order_product(treeiter)
         
         if order_product.isordered:
             self.showerror("%s es un producto ya pedido, no se puede eliminar" % order_product.name)

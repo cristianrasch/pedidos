@@ -69,6 +69,8 @@ class ProductModel(gtk.ListStore):
     def urgency_icon(self, order_product):
         return self.STAR_ICON if order_product.isurgent else None
 
+    def get_order_product(self, treeiter):
+        return self.get_value(treeiter, self.PROD_IDX)
 
 class ProductView(gtk.TreeView):
     def __init__(self):
