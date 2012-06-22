@@ -5,9 +5,25 @@ import gobject
 
 from datetime import date
 from random import randint
+# from threading import Timer
 
 from pedidos.helpers import relative_path
 from pedidos.model.order_product import OrderProduct
+
+class OrderProductModel(gtk.ListStore):
+    NAME_IDX = 0
+    
+    def __init__(self):
+        super(self.__class__, self).__init__(str)
+        for name in OrderProduct.find_all_unique_names_ordered_last_month():
+            self.append((name,))
+        # Timer(30, self.reset).start()
+
+    # def reset(self):
+    #     self.clear()
+    #     for name in OrderProduct.find_all_unique_names_ordered_last_month():
+    #         self.append((name,))
+
 
 class ProductModel(gtk.ListStore):
     STAR_ICON = gtk.gdk.pixbuf_new_from_file(relative_path("ui/images/star.png"))
@@ -18,8 +34,8 @@ class ProductModel(gtk.ListStore):
     ORDERED_IDX = 4
 
     def __init__(self):
-        super(ProductModel, self).__init__(gobject.TYPE_PYOBJECT, gtk.gdk.Pixbuf, 
-                                           str, int, "gboolean")
+        super(self.__class__, self).__init__(gobject.TYPE_PYOBJECT, gtk.gdk.Pixbuf, 
+                                             str, int, "gboolean")
 
         self._selected_date = date.today()
         self.set_sort_column_id(self.NAME_IDX, gtk.SORT_ASCENDING)
@@ -57,7 +73,7 @@ class ProductModel(gtk.ListStore):
 class ProductView(gtk.TreeView):
     def __init__(self):
         self.model = model = ProductModel()        
-        super(ProductView, self).__init__(self.model)
+        super(self.__class__, self).__init__(self.model)
         pixbuf_renderer = gtk.CellRendererPixbuf()
         text_renderer = gtk.CellRendererText()
         right_aligned_text_renderer = gtk.CellRendererText()

@@ -92,6 +92,18 @@ class OrderProductDAO(DAO):
             cur.execute(sql, (date.toordinal(),) + tuple(order_product_ids))
             return cur.rowcount
 
+    def find_all_unique_names_ordered_between(self, ordered_on_from, ordered_on_to):
+        with self.dbquery() as cur:
+            sql = """
+                SELECT DISTINCT name COLLATE NOCASE
+                FROM order_products
+                WHERE ordered_on >= ? AND
+                      ordered_on <= ?
+                ORDER BY name ASC
+            """
+            cur.execute(sql, (ordered_on_from.toordinal(), ordered_on_to.toordinal()))
+            return map(lambda row: row["name"], cur.fetchall())
+
     def tearDown(self):
         with self.dbquery() as cur:
             cur.execute("DELETE FROM order_products")
@@ -169,6 +181,12 @@ class OrderProduct(Model):
         if pending_products:
             order_product_ids = map(lambda product: product.id, pending_products)
             return cls.dao.mass_update_ordered_on(today, order_product_ids)
+
+    @classmethod
+    def find_all_unique_names_ordered_last_month(cls):
+        today = date.today()
+        a_month_ago = today - timedelta(weeks=4)
+        return cls.dao.find_all_unique_names_ordered_between(a_month_ago, today)
 
     @classmethod
     def new(cls, row):

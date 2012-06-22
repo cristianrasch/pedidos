@@ -1,4 +1,5 @@
 import unittest2
+import re
 from datetime import date, timedelta
 
 from pedidos.model.order_product import OrderProduct, OrderProductDAO
@@ -95,11 +96,31 @@ class TestOrderProduct(DatabseBackedTestCase):
         self.assertEqual([amoxidal], order_products)
 
     def test_reorder_pending_products(self):
-            self.assertIsNone(OrderProduct.reorder_pending_products())
-            yesterday = date.today() - timedelta(days=1)
-            amoxidal = OrderProduct(name="Amoxidal", ordered_on=yesterday)
-            self.assertTrue(amoxidal.save(validate=False))
-            self.assertEqual(1, OrderProduct.reorder_pending_products())
+        self.assertIsNone(OrderProduct.reorder_pending_products())
+        yesterday = date.today() - timedelta(days=1)
+        amoxidal = OrderProduct(name="Amoxidal", ordered_on=yesterday)
+        self.assertTrue(amoxidal.save(validate=False))
+        self.assertEqual(1, OrderProduct.reorder_pending_products())
+
+    def test_find_all_unique_names_ordered_last_month(self):
+        today = date.today()
+        a_week_ago = today - timedelta(weeks=1)
+        two_weeks_ago = today - timedelta(weeks=2)
+        a_month_ago = today - timedelta(weeks=4)
+
+        OrderProduct(name="Amoxidal", ordered_on=a_week_ago).save(False)
+        OrderProduct(name="amoxidal", ordered_on=two_weeks_ago).save(False)
+        OrderProduct(name="Sertal", ordered_on=two_weeks_ago).save(False)
+        OrderProduct(name="sertal", ordered_on=a_week_ago).save(False)
+
+        unique_names = OrderProduct.find_all_unique_names_ordered_last_month()
+        self.assertEqual(2, len(unique_names))
+    
+        amoxidalre = re.compile(r'amoxidal', re.IGNORECASE)
+        sertalre = re.compile(r'sertal', re.IGNORECASE)
+        for regex in (amoxidalre, sertalre):
+            matched = filter(lambda name: re.match(regex, name), unique_names)
+            self.assertEqual(1, len(matched))
 
 
 class TestOrderProductDAO(DatabseBackedTestCase):
@@ -125,3 +146,23 @@ class TestOrderProductDAO(DatabseBackedTestCase):
         sertal.save()
         affected_rows = self.dao.mass_update_ordered_on(today, (amoxidal.id, sertal.id))
         self.assertEqual(2, affected_rows)
+
+    def test_find_all_unique_names_ordered_between(self):
+        today = date.today()
+        a_week_from_today = today + timedelta(weeks=1)
+        two_weeks_from_today = today + timedelta(weeks=2)
+        a_month_from_today = today + timedelta(weeks=4)
+
+        OrderProduct(name="Amoxidal", ordered_on=a_week_from_today).save()
+        OrderProduct(name="amoxidal", ordered_on=two_weeks_from_today).save()
+        OrderProduct(name="Sertal", ordered_on=two_weeks_from_today).save()
+        OrderProduct(name="sertal", ordered_on=a_week_from_today).save()
+        
+        unique_names = self.dao.find_all_unique_names_ordered_between(today, a_month_from_today)
+        self.assertEqual(2, len(unique_names))
+    
+        amoxidalre = re.compile(r'amoxidal', re.IGNORECASE)
+        sertalre = re.compile(r'sertal', re.IGNORECASE)
+        for regex in (amoxidalre, sertalre):
+            matched = filter(lambda name: re.match(regex, name), unique_names)
+            self.assertEqual(1, len(matched))

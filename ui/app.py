@@ -5,13 +5,14 @@ import os
 
 from datetime import date
 
-from treeview import ProductModel, ProductView
+from treeview import OrderProductModel, ProductView
 from pedidos.helpers import relative_path
 from pedidos.model.order_product import OrderProduct
 
 class App(object):
     def __init__(self):
         self.build_from_glade_xml()
+        self.build_entry_completion()
         self.build_product_view()
         self.reset_calendar()
         self.reset_product_quantity()
@@ -28,6 +29,13 @@ class App(object):
         self.quantity = self.builder.get_object("quantity")
         self.urgency = self.builder.get_object("urgency")
         self.title = self.builder.get_object("title")
+
+    def build_entry_completion(self):
+        completion = gtk.EntryCompletion()
+        self.name.set_completion(completion)
+        completion.set_model(OrderProductModel())
+        completion.set_text_column(OrderProductModel.NAME_IDX)
+        completion.set_minimum_key_length(3)
       
     def build_product_view(self):
         window = self.builder.get_object("scrolledwindow")
