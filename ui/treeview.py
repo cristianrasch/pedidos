@@ -22,6 +22,7 @@ class ProductModel(gtk.ListStore):
                                            str, int, "gboolean")
 
         self._selected_date = date.today()
+        self.set_sort_column_id(self.NAME_IDX, gtk.SORT_ASCENDING)
 
     @property
     def selected_date(self):
@@ -44,18 +45,19 @@ class ProductModel(gtk.ListStore):
         self.append(l)
 
     def update_order_product(self, treeiter, order_product):
-        self.set_value(treeiter, ProductModel.URGENCY_IDX, self.urgency_icon(order_product))
-        self.set_value(treeiter, ProductModel.NAME_IDX, order_product.name)
-        self.set_value(treeiter, ProductModel.QUANTITY_IDX, order_product.quantity)
-        self.set_value(treeiter, ProductModel.ORDERED_IDX, order_product.isordered)
+        self.set_value(treeiter, self.URGENCY_IDX, self.urgency_icon(order_product))
+        self.set_value(treeiter, self.NAME_IDX, order_product.name)
+        self.set_value(treeiter, self.QUANTITY_IDX, order_product.quantity)
+        self.set_value(treeiter, self.ORDERED_IDX, order_product.isordered)
 
     def urgency_icon(self, order_product):
         return self.STAR_ICON if order_product.isurgent else None
 
 
 class ProductView(gtk.TreeView):
-    def __init__(self, model):
-        super(ProductView, self).__init__(model)
+    def __init__(self):
+        self.model = model = ProductModel()        
+        super(ProductView, self).__init__(self.model)
         pixbuf_renderer = gtk.CellRendererPixbuf()
         text_renderer = gtk.CellRendererText()
         right_aligned_text_renderer = gtk.CellRendererText()
@@ -72,6 +74,7 @@ class ProductView(gtk.TreeView):
                                                  text=model.NAME_IDX)
         self.configure_and_add_column(product_name_column)
         product_name_column.set_expand(True)
+        product_name_column.set_sort_column_id(model.NAME_IDX)
         
         product_quantity_column = gtk.TreeViewColumn("Cantidad", 
                                                      right_aligned_text_renderer, 
@@ -99,3 +102,6 @@ class ProductView(gtk.TreeView):
         column.set_alignment(0.5)
         column.set_min_width(50)
         self.append_column(column)
+
+    def set_date(self, date):
+        self.model.selected_date = date

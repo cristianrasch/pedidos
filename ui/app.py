@@ -31,8 +31,7 @@ class App(object):
       
     def build_product_view(self):
         window = self.builder.get_object("scrolledwindow")
-        self.product_model = ProductModel()        
-        self.product_view = ProductView(self.product_model)        
+        self.product_view = ProductView()
         self.product_view.connect("cursor-changed", self.on_product_clicked)
         self.product_view.connect("select-cursor-row", self.on_product_double_clicked)
         window.add(self.product_view)
@@ -114,7 +113,7 @@ class App(object):
     def on_calendar_day_selected(self, widget):
         selected_date = self.calendardate()
         self.title.set_text("Pedido del %s" % selected_date.strftime("%d/%m"))
-        self.product_model.selected_date = selected_date
+        self.product_view.set_date(selected_date)
 
     def on_product_clicked(self, treeview):
         treeiter = treeview.get_selected()[1]
