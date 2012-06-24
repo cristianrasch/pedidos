@@ -5,7 +5,7 @@ import gobject
 
 from datetime import date
 from random import randint
-# from threading import Timer
+from threading import Timer
 
 from pedidos.helpers import relative_path
 from pedidos.model.order_product import OrderProduct
@@ -17,12 +17,13 @@ class OrderProductModel(gtk.ListStore):
         super(self.__class__, self).__init__(str)
         for name in OrderProduct.find_all_unique_names_ordered_last_month():
             self.append((name,))
-        # Timer(30, self.reset).start()
+        Timer(15, self.reset).start()
 
-    # def reset(self):
-    #     self.clear()
-    #     for name in OrderProduct.find_all_unique_names_ordered_last_month():
-    #         self.append((name,))
+    def reset(self):
+        self.clear()
+        for i in xrange(1, 6):
+        # for name in OrderProduct.find_all_unique_names_ordered_last_month():
+            self.append(("Product #%d" % i,))
 
 
 class ProductModel(gtk.ListStore):

@@ -49,5 +49,6 @@ class DAO(object):
             self.__class__.conn.close()
             self.__class__.conn = None
 
-    def tearDown(self): pass
+    def tearDown(self):
+        raise Exception("not implemented")
 

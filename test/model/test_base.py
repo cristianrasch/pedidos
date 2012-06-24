@@ -1,3 +1,5 @@
+# -*- coding: UTF-8 -*-
+
 import unittest2
 import re
 
