@@ -2,6 +2,7 @@
 
 import unittest2
 import re
+import os
 from datetime import date, timedelta
 
 from pedidos.model.order_product import OrderProduct, OrderProductDAO
@@ -123,6 +124,13 @@ class TestOrderProduct(DatabseBackedTestCase):
         for regex in (amoxidalre, sertalre):
             matched = filter(lambda name: re.match(regex, name), unique_names)
             self.assertEqual(1, len(matched))
+            
+    def test_find_all_not_yet_ordered_on(self):
+        amoxidal = OrderProduct(name="Amoxidal")
+        amoxidal.save()
+        OrderProduct(name="Sertal", isordered=True).save()
+        order_products = OrderProduct.find_all_not_yet_ordered_on(date.today())
+        self.assertEqual([amoxidal], order_products)
 
 
 class TestOrderProductDAO(DatabseBackedTestCase):

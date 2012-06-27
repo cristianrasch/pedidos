@@ -5,7 +5,9 @@ import os
 
 from datetime import date
 
+
 from treeview import OrderProductModel, ProductView
+from text_printer import OrderProductPrinter
 from pedidos.helpers import relative_path
 from pedidos.model.order_product import OrderProduct
 
@@ -145,3 +147,22 @@ class App(object):
             confirmed = self.ask("¿Está seguro desea eliminar el producto: %s?" % order_product.name)
             if confirmed and order_product.delete():
                 model.remove(treeiter)
+                
+    def on_print_clicked(self, widget):
+        printop = gtk.PrintOperation()
+        page_setup = gtk.PageSetup()
+        page_setup.set_paper_size(gtk.PaperSize(gtk.PAPER_NAME_A4))
+        printop.set_default_page_setup(page_setup)
+        order_products = OrderProduct.find_all_not_yet_ordered_on(self.calendardate())
+        self.printer = OrderProductPrinter(order_products)
+        n_pages = self.printer.calc_n_pages()
+        printop.set_n_pages(n_pages)
+        printop.connect("draw_page", self.print_ordered_products)
+        printop.run(gtk.PRINT_OPERATION_ACTION_PRINT_DIALOG)
+
+    def print_ordered_products(self, operation, context, page_nr):
+        pangolayout = context.create_pango_layout()
+        text = self.printer.print_page(page_nr)
+        pangolayout.set_text(text)
+        cairo_context = context.get_cairo_context()
+        cairo_context.show_layout(pangolayout)

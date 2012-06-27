@@ -169,6 +169,11 @@ class OrderProduct(Model):
         return map(lambda row: cls.new(row), rows)
 
     @classmethod
+    def find_all_not_yet_ordered_on(cls, ordered_on):
+        order_products = cls.find_all_by_ordered_on(ordered_on)
+        return filter(lambda order_product: not order_product.isordered, order_products)
+
+    @classmethod
     def find_all_not_ordered_before(cls, date):
         rows = cls.dao.find_all_not_ordered_before(date)
         return map(lambda row: cls.new(row), rows)
