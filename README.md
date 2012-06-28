@@ -3,6 +3,7 @@ Aplicación de escritorio para la gestión de pedidos escrita en PyGTK.
 
 ### Principales características ###
 * Permite gestionar pedidos hechos en diferentes fechas.
+* Permite imprimir pedidos en papel.
 * Almacena los pedidos en una mini base de datos.
 * Corre en *cualquier* plataforma donde se pueda instalar Python y PyGTK.
 
