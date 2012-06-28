@@ -3,6 +3,7 @@
 import sqlite3
 import calendar
 from datetime import date, datetime, timedelta
+from operator import attrgetter
 
 from base import Model
 from pedidos.db.dao import DAO
@@ -57,7 +58,7 @@ class OrderProductDAO(DAO):
             sql = """
                 SELECT * FROM order_products
                 WHERE ordered_on = ?
-                ORDER BY created_at ASC
+                ORDER BY isurgent DESC, created_at ASC
             """
             cur.execute(sql, (ordered_on.toordinal(),))
             return cur.fetchall()
